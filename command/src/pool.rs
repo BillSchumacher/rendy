@@ -2,7 +2,7 @@
 
 use {
     crate::{buffer::*, capability::*, core::Device, family::FamilyId},
-    rendy_core::hal::{device::Device as _, pool::CommandPool as _, Backend},
+    rendy_core::hal::{device::Device as _a, pool::CommandPool as _, Backend},
 };
 
 /// Simple pool wrapper.
@@ -76,10 +76,10 @@ where
         C: Capability,
     {
         let level = L::default();
+        let mut cmd_buffers: Vec<B::CommandBuffer> = Vec::with_capacity(count);
+        unsafe { self.raw.allocate(count, level.raw_level(), &mut cmd_buffers) };
 
-        let buffers = unsafe { self.raw.allocate_vec(count, level.raw_level()) };
-
-        buffers
+        cmd_buffers
             .into_iter()
             .map(|raw| unsafe {
                 CommandBuffer::from_raw(

@@ -21,7 +21,7 @@ const DESCRIPTOR_TYPES: [DescriptorType; DESCRIPTOR_TYPES_COUNT] = [
         },
     },
     DescriptorType::Image {
-        ty: ImageDescriptorType::Storage,
+        ty: ImageDescriptorType::Storage { read_only: false },
     },
     DescriptorType::Buffer {
         ty: BufferDescriptorType::Storage { read_only: false },
@@ -70,7 +70,10 @@ fn descriptor_type_index(ty: &DescriptorType) -> usize {
             },
         } => 2,
         DescriptorType::Image {
-            ty: ImageDescriptorType::Storage,
+            ty: ImageDescriptorType::Storage { read_only: false },
+        } => 3,
+        DescriptorType::Image {
+            ty: ImageDescriptorType::Storage { read_only: true },
         } => 3,
         DescriptorType::Buffer {
             ty: BufferDescriptorType::Storage { read_only: _ },
@@ -174,6 +177,44 @@ impl DescriptorRanges {
         }
 
         descs
+    }
+}
+
+impl Iterator for DescriptorRanges {
+    type Item = u32;
+
+    fn next(&self) -> DescriptorRangesIter<'_> {
+        DescriptorRangesIter {
+            counts: &self.counts,
+            index: 0,
+        }
+    }
+}
+
+impl<'b> Iterator for DescriptorRangesIter<'b> {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<DescriptorRangeDesc> {
+        loop {
+            let index = self.index as usize;
+            if index >= DESCRIPTOR_TYPES_COUNT {
+                return None;
+            } else {
+                self.index += 1;
+                if self.counts[index] > 0 {
+                    return Some(DescriptorRangeDesc {
+                        count: self.counts[index] as usize,
+                        ty: DESCRIPTOR_TYPES[index],
+                    });
+                }
+            }
+        }
+    }
+}
+
+impl ExactSizeIterator for DescriptorRanges {
+    fn len(&self) -> u32 {
+        self.counts.len() as u32
     }
 }
 

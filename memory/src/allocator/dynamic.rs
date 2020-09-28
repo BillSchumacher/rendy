@@ -13,8 +13,8 @@ use {
         memory::*,
         util::*,
     },
-    gfx_hal::{device::Device as _, Backend},
-    hibitset::{BitSet, BitSetLike as _},
+    gfx_hal::{device::Device as _, Backend, memory as m},
+    hibitset::{BitSet, BitSetLike as _a},
 };
 
 /// Memory block allocated from `DynamicAllocator`
@@ -281,7 +281,10 @@ where
                 .contains(gfx_hal::memory::Properties::CPU_VISIBLE)
             {
                 log::trace!("Map new memory object");
-                match device.map_memory(&raw, 0..chunk_size) {
+                match device.map_memory(&raw, m::Segment {
+                    offset: 0,
+                    size: Option::from(chunk_size)
+                }) {
                     Ok(mapping) => Some(NonNull::new_unchecked(mapping)),
                     Err(gfx_hal::device::MapError::OutOfMemory(error)) => {
                         device.free_memory(raw);

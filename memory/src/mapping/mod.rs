@@ -3,7 +3,7 @@ pub(crate) mod write;
 
 use {
     crate::{memory::Memory, util::*},
-    gfx_hal::{device::Device as _, Backend},
+    gfx_hal::{device::Device as _, Backend, memory as m},
     std::{ops::Range, ptr::NonNull},
 };
 
@@ -181,7 +181,7 @@ where
                 self.mapping_range.clone(),
                 aligned_sub_range.clone()
             ));
-            device.invalidate_mapped_memory_ranges(Some((self.memory.raw(), aligned_sub_range)))?;
+            device.invalidate_mapped_memory_ranges(Some((self.memory.raw(), m::Segment::ALL )))?; //aligned_sub_range)))?;
         }
 
         let slice = mapped_slice::<T>(ptr, size);
@@ -231,7 +231,10 @@ where
             ));
             Some(move || {
                 device
-                    .flush_mapped_memory_ranges(Some((memory.raw(), aligned_sub_range)))
+                    .flush_mapped_memory_ranges(Some((memory.raw(), m::Segment {
+                        offset: aligned_sub_range.start,
+                        size: Option::from(aligned_sub_range.end - aligned_sub_range.start)
+                    })))
                     .expect("Should flush successfully");
             })
         } else {
